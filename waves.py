@@ -35,10 +35,11 @@ class PCMSampler(ADC):
         # signal is a AnalogWave object
         time_domain = np.arange(0, time, self.sampling_interval)
         sampled_signal = signal.function(time_domain)
-        sampled_signal = finite_resolution(sampled_signal, self.levels, signal)
+        sampled_signal, stream = finite_resolution(sampled_signal, self.levels, signal)
         t = time_domain.repeat(2)[1:]
         y = sampled_signal.repeat(2)[:-1]
         ax.plot(t, y, **kwargs)
+        return stream
 
 class CDFormatSampler(PCMSampler):
     def __init__(self):
@@ -51,4 +52,4 @@ def finite_resolution(sampled, levels, signal):
             dtype=int)
     print('stream:', unsigned)
     signed = unsigned * A/int_ampl + signal.Amin
-    return signed
+    return signed, unsigned
