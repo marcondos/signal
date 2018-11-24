@@ -24,18 +24,23 @@ class AnalogSineWave(AnalogWave):
         return np.sin(self.angular_frequency * t + self.phase)
 
 class ADC(object):
-    def __init__(self, label):
-        self.label = label
-
-class PCMSampler(ADC):
     def __init__(self, label, freq, res):
         # frequency in Hz, resolution in bits
         self.sampling_frequency = freq
         self.sampling_interval = 1/freq
         self.amplitude_resolution = res
         self.levels = 2**res
-        super().__init__(label)
+        self.label = label
 
+class DSDSampler(ADC):
+    pass
+    # noise shaping
+
+class SACDFormatSampler(DSDSampler):
+    def __init__(self, label)
+        super().__init__(label, 64 * 44100, 1):
+
+class PCMSampler(ADC):
     def sample(self, signal, time, ax, **kwargs):
         # signal is a AnalogWave object
         time_domain = np.arange(0, time, self.sampling_interval)
