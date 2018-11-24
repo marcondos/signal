@@ -14,6 +14,7 @@ class AnalogWave(Wave):
         ax.plot(continuous_time, self.function(continuous_time), **kwargs)
 
 class AnalogSineWave(AnalogWave):
+    amplitude = 1
     def function(self, t):
         return np.sin(self.angular_frequency * t + self.phase)
 
@@ -28,10 +29,12 @@ class PCMSampler(ADC):
         self.amplitude_resolution = res
         self.levels = 2**res
 
-    def plot(self, ax, time, signal, **kwargs):
+    def sample(self, signal, time, ax, **kwargs):
         # signal is a AnalogWave object
         time_domain = np.arange(0, time, self.sampling_interval)
         sampled_signal = signal.function(time_domain)
+        sampled_signal = finite_resolution(sampled_signal, self.levels,
+                signal.amplitude)
         t = time_domain.repeat(2)[1:]
         y = sampled_signal.repeat(2)[:-1]
         ax.plot(t, y, **kwargs)
@@ -39,3 +42,7 @@ class PCMSampler(ADC):
 class CDFormatSampler(PCMSampler):
     def __init__(self):
         super().__init__(44100, 16)
+
+def finite_resolution(sampled, levels, A):
+    int_ampl = levels - 1
+    return np.array([round(s * int_ampl/A) * A/int_ampl for s in sampled])
