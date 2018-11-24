@@ -47,6 +47,8 @@ class CDFormatSampler(PCMSampler):
 def finite_resolution(sampled, levels, signal):
     A = signal.amplitude
     int_ampl = levels - 1
-    unsigned = np.array([round((s - signal.Amin) * int_ampl/A) for s in sampled])
+    unsigned = np.array([round(s * int_ampl/A) for s in sampled-signal.Amin],
+            dtype=int)
+    print('stream:', unsigned)
     signed = unsigned * A/int_ampl + signal.Amin
     return signed
