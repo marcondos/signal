@@ -9,7 +9,7 @@ class AnalogWave(Wave):
         self.frequency = freq
         self.angular_frequency = 2 * np.pi * freq
 
-    def plot(self, ax, length, **kwargs):
+    def plot(self, length, ax, **kwargs):
         continuous_time = np.linspace(0, length, 300)
         ax.plot(continuous_time, self.function(continuous_time), **kwargs)
 
