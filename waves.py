@@ -1,17 +1,20 @@
 import numpy as np
 
 class Wave(object):
-    pass
+    def __init__(self, label):
+        self.label = label
 
 class AnalogWave(Wave):
-    def __init__(self, freq, phase=0):
+    def __init__(self, label, freq, phase=0):
         self.phase = phase
         self.frequency = freq
         self.angular_frequency = 2 * np.pi * freq
+        super().__init__(label)
 
     def plot(self, length, ax, **kwargs):
         continuous_time = np.linspace(0, length, 300)
-        ax.plot(continuous_time, self.function(continuous_time), **kwargs)
+        ax.plot(continuous_time, self.function(continuous_time),
+                label=self.label, **kwargs)
 
 class AnalogSineWave(AnalogWave):
     Amin = -1
@@ -41,7 +44,7 @@ class PCMSampler(ADC):
                 signal, self.label)
         t = time_domain.repeat(2)[1:]
         y = sampled_signal.repeat(2)[:-1]
-        ax.plot(t, y, **kwargs)
+        ax.plot(t, y, **kwargs, label=self.label)
         return stream
 
 class CDFormatSampler(PCMSampler):
