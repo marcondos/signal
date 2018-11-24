@@ -9,11 +9,12 @@ class AnalogWave(Wave):
         self.frequency = freq
         self.angular_frequency = 2 * np.pi * freq
 
-    def plot(self, ax, time, signal, **kwargs):
-        ax.plot(time, signal, **kwargs)
+    def plot(self, ax, length, **kwargs):
+        continuous_time = np.linspace(0, length, 300)
+        ax.plot(continuous_time, self.function(continuous_time), **kwargs)
 
 class AnalogSineWave(AnalogWave):
-    def function(t):
+    def function(self, t):
         return np.sin(self.angular_frequency * t + self.phase)
 
 class Sampler(object):
@@ -29,9 +30,6 @@ class PCMSampler(Sampler):
 
     def plot(self, ax, time, signal, **kwargs):
         # signal is a AnalogWave object
-        continuous_time = np.linspace(0, time, 300)
-        ax.plot(continuous_time, signal.function(continuous_time), color='k',
-                lw=1)
         time_domain = np.arange(0, time, self.sampling_interval)
         sampled_signal = signal.function(time_domain)
         t = time_domain.repeat(2)[1:]
