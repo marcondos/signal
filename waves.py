@@ -51,6 +51,10 @@ class CDFormatSampler(PCMSampler):
     def __init__(self, label):
         super().__init__(label, 44100, 16)
 
+class HFPALinearPCM(PCMSampler):
+    def __init__(self, label):
+        super().__init__(label, 192000, 24)
+
 def finite_resolution(sampled, levels, signal, label):
     A = signal.amplitude
     int_ampl = levels - 1
