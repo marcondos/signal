@@ -21,35 +21,38 @@ class AnalogSineWave(AnalogWave):
         return np.sin(self.angular_frequency * t + self.phase)
 
 class ADC(object):
-    pass
+    def __init__(self, label):
+        self.label = label
 
 class PCMSampler(ADC):
-    def __init__(self, freq, res):
+    def __init__(self, label, freq, res):
         # frequency in Hz, resolution in bits
         self.sampling_frequency = freq
         self.sampling_interval = 1/freq
         self.amplitude_resolution = res
         self.levels = 2**res
+        super().__init__(label)
 
     def sample(self, signal, time, ax, **kwargs):
         # signal is a AnalogWave object
         time_domain = np.arange(0, time, self.sampling_interval)
         sampled_signal = signal.function(time_domain)
-        sampled_signal, stream = finite_resolution(sampled_signal, self.levels, signal)
+        sampled_signal, stream = finite_resolution(sampled_signal, self.levels,
+                signal, self.label)
         t = time_domain.repeat(2)[1:]
         y = sampled_signal.repeat(2)[:-1]
         ax.plot(t, y, **kwargs)
         return stream
 
 class CDFormatSampler(PCMSampler):
-    def __init__(self):
-        super().__init__(44100, 16)
+    def __init__(self, label):
+        super().__init__(label, 44100, 16)
 
-def finite_resolution(sampled, levels, signal):
+def finite_resolution(sampled, levels, signal, label):
     A = signal.amplitude
     int_ampl = levels - 1
     unsigned = np.array([round(s * int_ampl/A) for s in sampled-signal.Amin],
             dtype=int)
-    print('stream:', unsigned)
+    print(label, 'stream:', unsigned)
     signed = unsigned * A/int_ampl + signal.Amin
     return signed, unsigned
