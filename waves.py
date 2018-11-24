@@ -17,10 +17,10 @@ class AnalogSineWave(AnalogWave):
     def function(self, t):
         return np.sin(self.angular_frequency * t + self.phase)
 
-class Sampler(object):
+class ADC(object):
     pass
 
-class PCMSampler(Sampler):
+class PCMSampler(ADC):
     def __init__(self, freq, res):
         # frequency in Hz, resolution in bits
         self.sampling_frequency = freq
