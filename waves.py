@@ -64,7 +64,7 @@ class ADC(object):
                 for s in self.clip(input_signal.function(time_domain) + dither) \
                 - self.amp_min],
                 dtype=int)
-        print(of(self.label), 'stream:', unsigned)
+        print(of(self.label), 'stream:', shortlist(unsigned))
 
         # reconstruction stage:
         signed = unsigned * self.amplitude/self.int_amplitude \
@@ -75,10 +75,6 @@ class ADC(object):
                 fill_value='extrapolate')
         quantization_noise = digital(time) - analog
         return time_domain, signed, unsigned, quantization_noise
-
-
-
-        # Dither
 
 class DSDSampler(ADC):
     pass
@@ -121,3 +117,20 @@ class HFPALinearPCM(PCMSampler):
 
 def of(name):
     return name + ("'" if name.endswith('s') else "'s")
+
+def correlation(X, Y, j):
+    Xbar, Ybar = X.mean(), Y.mean()
+    SX, SY = X.size, Y.size
+    assert SX == SY
+    rho = np.sum( (X[:SX-j]-Xbar) * (Y[j:]-Ybar) )
+    rho /= np.sqrt( np.sum( (X[:SX-j]-Xbar)**2 ) )
+    rho /= np.sqrt( np.sum( (Y[j:]-Ybar)**2 ) )
+    return rho
+
+def twopar_correlation(X, Y):
+    lagsize = X.size
+    assert Y.size == lagsize
+    return list(range(lagsize//2)), [correlation(X, Y, lag) for lag in range(lagsize//2)]
+
+def shortlist(array):
+    return ' '.join([str(a) for a in list(array[:5]) + ['...'] + list(array[-5:])]).join(['[', ']'])
