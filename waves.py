@@ -111,21 +111,5 @@ class HFPALinearPCM(PCMSampler):
     def __init__(self, label):
         super().__init__(label, 192000, 24)
 
-def quantize(sampled, levels, signal, length, discrete_time, label):
-    A = signal.amplitude
-    int_ampl = levels - 1
-    # classification stage:
-    unsigned = np.array([round(s * int_ampl/A) for s in sampled-signal.Amin],
-            dtype=int)
-    print(label, 'stream:', unsigned)
-    # reconstruction stage:
-    signed = unsigned * A/int_ampl + signal.Amin
-    time = signal.time_array(length)
-    analog = signal.function(time)
-    digital = interpolate.interp1d(discrete_time, signed, kind=0,
-            fill_value='extrapolate')
-    quant_noise = digital(time) - analog
-    return signed, unsigned, quant_noise
-
 def of(name):
     return name + ("'" if name.endswith('s') else "'s")
