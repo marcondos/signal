@@ -43,10 +43,11 @@ class ADC(object):
         self.sampling_interval = 1/freq
         self.amplitude_resolution = res
         self.levels = 2**res
-        self.int_amplitude = self.levels - 1
+        int_amplitude = self.levels - 1
         self.amp_max = amp_max
         self.amp_min = -amp_max
-        self.amplitude = self.amp_max - self.amp_min
+        amplitude = self.amp_max - self.amp_min
+        self.quantization_step = amplitude/int_amplitude
         self.label = label
 
     def clip(self, signal):
