@@ -32,14 +32,15 @@ class AnalogWave(Wave):
 
 class AnalogSineWave(AnalogWave):
     def _function(self, t):
-        return np.sin(self.angular_frequency * t + self.phase)
+        t_seconds = t/1000
+        return np.sin(self.angular_frequency * t_seconds + self.phase)
 
 class ADC(object):
     def __init__(self, label, freq, res, amp_max=1.2, color=None):
         self.color = next(COLOR) if color is None else color
         # frequency in Hz, resolution in bits
         self.sampling_frequency = freq
-        self.sampling_interval = 1/freq
+        self.sampling_interval = 1/freq * 1000 # in miliseconds
         self.amplitude_resolution = res
         self.levels = 2**res
         int_amplitude = self.levels - 1
