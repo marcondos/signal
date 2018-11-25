@@ -31,14 +31,11 @@ class AnalogWave(Wave):
                 label=self.label, **kwargs)
 
 class AnalogSineWave(AnalogWave):
-    Amin = -1
-    Amax = 1
-    amplitude = Amax - Amin
-    def function(self, t):
+    def _function(self, t):
         return np.sin(self.angular_frequency * t + self.phase)
 
 class ADC(object):
-    def __init__(self, label, freq, res, color=None):
+    def __init__(self, label, freq, res, amp_max=1.2, color=None):
         self.color = next(COLOR) if color is None else color
         # frequency in Hz, resolution in bits
         self.sampling_frequency = freq
@@ -46,6 +43,9 @@ class ADC(object):
         self.amplitude_resolution = res
         self.levels = 2**res
         self.int_amplitude = self.levels - 1
+        self.amp_max = amp_max
+        self.amp_min = -amp_max
+        self.amplitude = self.amp_max - self.amp_min
         self.label = label
 
     def quantize(self, input_signal, time_length, dither=0):
@@ -63,8 +63,8 @@ class ADC(object):
         print(of(self.label), 'stream:', unsigned)
 
         # reconstruction stage:
-        signed = unsigned * input_signal.amplitude/self.int_amplitude \
-                + input_signal.Amin
+        signed = unsigned * self.amplitude/self.int_amplitude \
+                + self.amp_min
         time = input_signal.time_array(time_length)
         analog = input_signal.function(time)
         digital = interpolate.interp1d(time_domain, signed, kind=0,
