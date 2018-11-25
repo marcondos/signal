@@ -29,6 +29,7 @@ class AnalogWave(Wave):
         continuous_time = self.time_array(length)
         ax.plot(continuous_time, self.function(continuous_time),
                 label=self.label, **kwargs)
+        return continuous_time
 
 class AnalogSineWave(AnalogWave):
     def _function(self, t):
@@ -101,10 +102,10 @@ class PCMSampler(ADC):
         ax.plot(t, y, **kwargs, color=self.color, label=self.label)
         for kw in ['lw', 'linewidth', 'ls', 'linestyle']:
             kwargs.pop(kw, None)
-        ax.plot(signal.time_array(time_length), noise, lw=0.5, ls='-',
-                color=self.color, 
+        signal_domain = signal.time_array(time_length)
+        ax.plot(signal_domain, noise, lw=0.5, ls='-', color=self.color, 
                 label=of(self.label) + ' noise', **kwargs)
-        return stream, sampled_time, noise
+        return stream, sampled_time, signal_domain, noise
 
 class CDFormatSampler(PCMSampler):
     def __init__(self, label):
