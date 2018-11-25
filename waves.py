@@ -5,18 +5,22 @@ from scipy import interpolate
 COLOR = itertools.cycle(['C%i' % i for i in range(10)])
 
 class Wave(object):
-    def __init__(self, label):
+    def __init__(self, label, gain=1):
         self.label = label
+        self.gain = gain
+
+    def function(self, *args, **kwargs):
+        return self.gain * self._function(*args, **kwargs)
 
 class AnalogWave(Wave):
 
     infinite_points = 400
 
-    def __init__(self, label, freq, phase=0):
+    def __init__(self, label, freq, gain=1, phase=0):
         self.phase = phase
         self.frequency = freq
         self.angular_frequency = 2 * np.pi * freq
-        super().__init__(label)
+        super().__init__(label, gain=gain)
 
     def time_array(self, length):
         return np.linspace(0, length, self.infinite_points)
