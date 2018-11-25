@@ -53,11 +53,16 @@ class ADC(object):
     def clip(self, signal):
         return np.clip(signal, -self.amp_max, self.amp_max)
 
-    def quantize(self, input_signal, time_length, dither=0):
+    def quantize(self, input_signal, time_length, dither=False):
         time_domain = self.discrete_time(time_length)
-        if dither > 0:
-            dither = np.random.triangular(-dither, 0, dither,
-                    size=time_domain.size)
+        # lowest power ideal dither, d = 1/step, so the TPDF amplitude is
+        # twice the quantization step
+
+        # Triangular or retangular distributions require lower level of added
+        # noise for full elimination of distortion than Gaussian noise;
+        # Triangular distributed noise also minimizes noise modulation
+        dithering = np.random.triangular(-self.quantization_step, 0,
+                self.quantization_step, size=time_domain.size) if dither else 0
 
         # classification stage:
         unsigned = np.array([round(s/self.quantization_step) for s in self.clip(
@@ -86,7 +91,7 @@ class PCMSampler(ADC):
     def discrete_time(self, length):
         return np.arange(0, length, self.sampling_interval)
 
-    def sample(self, signal, time_length, ax, dither=0, **kwargs):
+    def sample(self, signal, time_length, ax, dither=False, **kwargs):
         # signal is a AnalogWave object
         sampled_time, sampled_signal, stream, noise = self.quantize(signal,
                 time_length, dither=dither)
