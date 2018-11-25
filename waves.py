@@ -60,16 +60,13 @@ class ADC(object):
                     size=time_domain.size)
 
         # classification stage:
-        unsigned = np.array([round(s \
-                * self.int_amplitude/self.amplitude) \
-                for s in self.clip(input_signal.function(time_domain) + dither) \
-                - self.amp_min],
-                dtype=int)
+        unsigned = np.array([round(s/self.quantization_step) for s in self.clip(
+            input_signal.function(time_domain) + dithering
+            ) - self.amp_min], dtype=int)
         print(of(self.label), 'stream:', shortlist(unsigned))
 
         # reconstruction stage:
-        signed = unsigned * self.amplitude/self.int_amplitude \
-                + self.amp_min
+        signed = unsigned * self.quantization_step + self.amp_min
         time = input_signal.time_array(time_length)
         analog = input_signal.function(time)
         digital = interpolate.interp1d(time_domain, signed, kind=0,
