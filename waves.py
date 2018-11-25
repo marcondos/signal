@@ -44,13 +44,17 @@ class ADC(object):
         self.int_amplitude = self.levels - 1
         self.label = label
 
-    def quantize(self, input_signal, time_length):
+    def quantize(self, input_signal, time_length, dither=0):
         time_domain = self.discrete_time(time_length)
+        if dither > 0:
+            dither = np.random.triangular(-dither, 0, dither,
+                    size=time_domain.size)
 
         # classification stage:
         unsigned = np.array([round(s \
                 * self.int_amplitude/input_signal.amplitude) \
-                for s in input_signal.function(time_domain) - input_signal.Amin],
+                for s in input_signal.function(time_domain) + dither \
+                - input_signal.Amin],
                 dtype=int)
         print(of(self.label), 'stream:', unsigned)
 
@@ -80,10 +84,10 @@ class PCMSampler(ADC):
     def discrete_time(self, length):
         return np.arange(0, length, self.sampling_interval)
 
-    def sample(self, signal, time_length, ax, **kwargs):
+    def sample(self, signal, time_length, ax, dither=0, **kwargs):
         # signal is a AnalogWave object
         sampled_time, sampled_signal, stream, noise = self.quantize(signal,
-                time_length)
+                time_length, dither=dither)
         t = sampled_time.repeat(2)[1:]
         y = sampled_signal.repeat(2)[:-1]
         kwargs.pop('color', None)
