@@ -135,5 +135,6 @@ def twopar_correlation(X, Y):
     assert Y.size == lagsize
     return list(range(lagsize//2)), [correlation(X, Y, lag) for lag in range(lagsize//2)]
 
-def shortlist(array):
-    return ' '.join([str(a) for a in list(array[:5]) + ['...'] + list(array[-5:])]).join(['[', ']'])
+def shortlist(array, show=4):
+    return ' '.join([str(a) for a in list(
+        array[:show]) + ['...'] + list(array[-show:])]).join(['[', ']'])
