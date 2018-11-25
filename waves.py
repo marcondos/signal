@@ -14,16 +14,15 @@ class Wave(object):
 
 class AnalogWave(Wave):
 
-    infinite_points = 400
-
-    def __init__(self, label, freq, gain=1, phase=0):
+    def __init__(self, label, freq, gain=1, phase=0, infinity=400):
         self.phase = phase
         self.frequency = freq
         self.angular_frequency = 2 * np.pi * freq
+        self.infinity = infinity
         super().__init__(label, gain=gain)
 
     def time_array(self, length):
-        return np.linspace(0, length, self.infinite_points)
+        return np.linspace(0, length, self.infinity)
 
     def plot(self, length, ax, **kwargs):
         continuous_time = self.time_array(length)
