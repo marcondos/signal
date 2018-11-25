@@ -66,8 +66,6 @@ class ADC(object):
 
 
 
-
-
         # Dither
 
 class DSDSampler(ADC):
