@@ -41,7 +41,32 @@ class ADC(object):
         self.sampling_interval = 1/freq
         self.amplitude_resolution = res
         self.levels = 2**res
+        self.int_amplitude = self.levels - 1
         self.label = label
+
+    def quantize(self, input_signal, time_length):
+        time_domain = self.discrete_time(time_length)
+
+        # classification stage:
+        unsigned = np.array([round(s \
+                * self.int_amplitude/input_signal.amplitude) \
+                for s in input_signal.function(time_domain) - input_signal.Amin],
+                dtype=int)
+        print(of(self.label), 'stream:', unsigned)
+
+        # reconstruction stage:
+        signed = unsigned * input_signal.amplitude/self.int_amplitude \
+                + input_signal.Amin
+        time = input_signal.time_array(time_length)
+        analog = input_signal.function(time)
+        digital = interpolate.interp1d(time_domain, signed, kind=0,
+                fill_value='extrapolate')
+        quantization_noise = digital(time) - analog
+        return time_domain, signed, unsigned, quantization_noise
+
+
+
+
 
         # Dither
 
@@ -57,21 +82,20 @@ class PCMSampler(ADC):
     def discrete_time(self, length):
         return np.arange(0, length, self.sampling_interval)
 
-    def sample(self, signal, time, ax, **kwargs):
+    def sample(self, signal, time_length, ax, **kwargs):
         # signal is a AnalogWave object
-        time_domain = self.discrete_time(time)
-        sampled_signal, stream, noise = quantize(signal.function(time_domain),
-                self.levels, signal, time, time_domain, self.label)
-        t = time_domain.repeat(2)[1:]
+        sampled_time, sampled_signal, stream, noise = self.quantize(signal,
+                time_length)
+        t = sampled_time.repeat(2)[1:]
         y = sampled_signal.repeat(2)[:-1]
         kwargs.pop('color', None)
         ax.plot(t, y, **kwargs, color=self.color, label=self.label)
         for kw in ['lw', 'linewidth', 'ls', 'linestyle']:
             kwargs.pop(kw, None)
-        ax.plot(signal.time_array(time), noise, lw=0.5, ls='-',
+        ax.plot(signal.time_array(time_length), noise, lw=0.5, ls='-',
                 color=self.color, 
-                label=self.label + ("'" if self.label.endswith('s') else "'s") + ' noise', **kwargs)
-        return stream, time_domain, noise
+                label=of(self.label) + ' noise', **kwargs)
+        return stream, sampled_time, noise
 
 class CDFormatSampler(PCMSampler):
     def __init__(self, label):
@@ -100,3 +124,6 @@ def quantize(sampled, levels, signal, length, discrete_time, label):
             fill_value='extrapolate')
     quant_noise = digital(time) - analog
     return signed, unsigned, quant_noise
+
+def of(name):
+    return name + ("'" if name.endswith('s') else "'s")
