@@ -48,6 +48,9 @@ class ADC(object):
         self.amplitude = self.amp_max - self.amp_min
         self.label = label
 
+    def clip(self, signal):
+        return np.clip(signal, -self.amp_max, self.amp_max)
+
     def quantize(self, input_signal, time_length, dither=0):
         time_domain = self.discrete_time(time_length)
         if dither > 0:
@@ -56,9 +59,9 @@ class ADC(object):
 
         # classification stage:
         unsigned = np.array([round(s \
-                * self.int_amplitude/input_signal.amplitude) \
-                for s in input_signal.function(time_domain) + dither \
-                - input_signal.Amin],
+                * self.int_amplitude/self.amplitude) \
+                for s in self.clip(input_signal.function(time_domain) + dither) \
+                - self.amp_min],
                 dtype=int)
         print(of(self.label), 'stream:', unsigned)
 
