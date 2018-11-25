@@ -68,7 +68,8 @@ class ADC(object):
         unsigned = np.array([round(s/self.quantization_step) for s in self.clip(
             input_signal.function(time_domain) + dithering
             ) - self.amp_min], dtype=int)
-        print(of(self.label), 'stream:', shortlist(unsigned))
+        print(of(self.label), 'stream (%i levels):' % self.levels,
+                shortlist(unsigned))
 
         # reconstruction stage:
         signed = unsigned * self.quantization_step + self.amp_min
