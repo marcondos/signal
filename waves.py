@@ -26,21 +26,20 @@ class AnalogWave(Wave):
 
     def plot(self, length, ax, **kwargs):
         continuous_time = self.time_array(length)
-        ax.plot(continuous_time, self.function(continuous_time),
-                label=self.label, **kwargs)
+        ax.plot(continuous_time*1000, self.function(continuous_time),
+                label=self.label, **kwargs) # in plot, time in miliseconds
         return continuous_time
 
 class AnalogSineWave(AnalogWave):
     def _function(self, t):
-        t_seconds = t/1000
-        return np.sin(self.angular_frequency * t_seconds + self.phase)
+        return np.sin(self.angular_frequency * t + self.phase)
 
 class ADC(object):
     def __init__(self, label, freq, res, amp_max=1.2, color=None):
         self.color = next(COLOR) if color is None else color
         # frequency in Hz, resolution in bits
         self.sampling_frequency = freq
-        self.sampling_interval = 1/freq * 1000 # in miliseconds
+        self.sampling_interval = 1/freq # in seconds
         self.amplitude_resolution = res
         self.levels = 2**res
         int_amplitude = self.levels - 1
@@ -68,8 +67,8 @@ class ADC(object):
         unsigned = np.array([round(s/self.quantization_step) for s in self.clip(
             input_signal.function(time_domain) + dithering
             ) - self.amp_min], dtype=int)
-        print(of(self.label), 'stream (%i levels):' % self.levels,
-                shortlist(unsigned))
+        #print(of(self.label), 'stream (%i levels):' % self.levels,
+        #        shortlist(unsigned))
 
         # reconstruction stage:
         signed = unsigned * self.quantization_step + self.amp_min
@@ -99,13 +98,13 @@ class PCMSampler(ADC):
         t = sampled_time.repeat(2)[1:]
         y = sampled_signal.repeat(2)[:-1]
         kwargs.pop('color', None)
-        ax.plot(t, y, **kwargs, color=self.color, label=self.label)
+        ax.plot(t*1000, y, **kwargs, color=self.color, label=self.label) #t (ms)
         for kw in ['lw', 'linewidth', 'ls', 'linestyle']:
             kwargs.pop(kw, None)
         signal_domain = signal.time_array(time_length)
-        ax.plot(signal_domain, noise, lw=0.5, ls='-', color=self.color, 
+        ax.plot(signal_domain*1000, noise, lw=0.5, ls='-', color=self.color,
                 label=of(self.label) + ' noise', **kwargs)
-        return stream, sampled_time, signal_domain, noise
+        return stream, sampled_time, sampled_signal, signal_domain, noise
 
 class CDFormatSampler(PCMSampler):
     def __init__(self, label):
