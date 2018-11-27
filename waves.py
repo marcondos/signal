@@ -1,6 +1,7 @@
 import numpy as np
 import itertools
 from scipy import interpolate
+from math import floor
 
 COLOR = itertools.cycle(['C%i' % i for i in range(10)])
 
@@ -60,13 +61,18 @@ class ADC(object):
         # Triangular or retangular distributions require lower level of added
         # noise for full elimination of distortion than Gaussian noise;
         # Triangular distributed noise also minimizes noise modulation
-        dithering = np.random.triangular(-self.quantization_step, 0,
-                self.quantization_step, size=time_domain.size) if dither else 0
+        # retangular:
+        distribution, pars = np.random.uniform, (0, self.quantization_step)
+        # triangular:
+        #distribution, pars = np.random.triangular, (0, self.quantization_step/2, self.quantization_step)
+        dithering = distribution(*pars, size=time_domain.size) \
+                if dither else 0
 
         # classification stage:
-        unsigned = np.array([round(s/self.quantization_step) for s in self.clip(
-            input_signal.function(time_domain) + dithering
-            ) - self.amp_min], dtype=int)
+        clipped_signal = self.clip(input_signal.function(time_domain) \
+                + dithering) - self.amp_min
+        unsigned = np.array([floor(s/self.quantization_step) \
+                for s in clipped_signal], dtype=int)
         #print(of(self.label), 'stream (%i levels):' % self.levels,
         #        shortlist(unsigned))
 
