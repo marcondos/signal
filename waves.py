@@ -6,22 +6,22 @@ from math import floor
 COLOR = itertools.cycle(['C%i' % i for i in range(10)])
 
 class Wave(object):
-    def __init__(self, label, gain=1):
+    def __init__(self, label):
         self.label = label
-        self.gain = gain
-
-    def function(self, *args, **kwargs):
-        return self.gain * self._function(*args, **kwargs)
 
 class AnalogWave(Wave):
 
     def __init__(self, label, freq, gain=1, phase=0, infinity=400):
+        self.gain = gain
         self.phase = phase
         self.frequency = freq
         self.period = 1/self.frequency
         self.angular_frequency = 2 * np.pi * freq
         self.infinity = infinity
-        super().__init__(label, gain=gain)
+        super().__init__(label)
+
+    def function(self, *args, **kwargs):
+        return self.gain * self._function(*args, **kwargs)
 
     def time_array(self, length):
         return np.arange(0, length, self.period/self.infinity)
@@ -37,12 +37,16 @@ class AnalogSineWave(AnalogWave):
         return np.sin(self.angular_frequency * t + self.phase)
 
 class DigitalWave(Wave):
+    pass
 
-    def __init__(self, label, time, signal, stream):
-        self.label = label
+class PCMDigitalWave(DigitalWave):
+
+    def __init__(self, label, stream, rate, bits):
         self.stream = stream
-        self.sampled_time = time
-        self.sampled_signal = signal
+        self.sampling_rate = rate
+        self.sampling_resolution = bits
+        self.levels = 2**bits
+        super().__init__(label)
 
 class ADC(object):
     def __init__(self, label, freq, res, amp_max=1.2, color=None):
@@ -92,8 +96,10 @@ class ADC(object):
         digital = interpolate.interp1d(time_domain, signed, kind=0,
                 fill_value='extrapolate')
         quantization_noise = digital(time) - analog
-        return DigitalWave(input_signal.label + ' converted', time_domain,
-                signed, unsigned), quantization_noise
+        digital = self.digitize(input_signal.label + ' converted', unsigned,
+                self.sampling_frequency, self.amplitude_resolution)
+        # *pars
+        return digital, time_domain, signed, quantization_noise
 
 class DSDSampler(ADC):
     pass
@@ -104,25 +110,28 @@ class SACDFormatSampler(DSDSampler):
         super().__init__(label, 64 * 44100, 1)
 
 class PCMSampler(ADC):
+    digitize = PCMDigitalWave
+
     def discrete_time(self, length):
         return np.arange(0, length, self.sampling_interval)
 
     def sample(self, signal, time_length, ax, show_noise=False, dither=False,
             **kwargs):
         # signal is a AnalogWave object
-        converted, noise = self.quantize(signal,
-                time_length, dither=dither)
-        t = converted.sampled_time.repeat(2)[1:]
-        y = converted.sampled_signal.repeat(2)[:-1]
+        quantized = self.quantize(signal, time_length, dither=dither)
+        #quantized is converted, sampled_time, sampled_signal, noise
+        t = quantized[1].repeat(2)[1:]
+        y = quantized[2].repeat(2)[:-1]
         kwargs.pop('color', None)
         ax.plot(t*1000, y, **kwargs, color=self.color, label=self.label) #t (ms)
         for kw in ['lw', 'linewidth', 'ls', 'linestyle']:
             kwargs.pop(kw, None)
         signal_domain = signal.time_array(time_length)
         if show_noise:
-            ax.plot(signal_domain*1000, noise, lw=0.5, ls='-', color=self.color,
-                    label=of(self.label) + ' noise', **kwargs)
-        return converted, noise
+            ax.plot(signal_domain*1000, quantized[-1], lw=0.5, ls='-',
+                    color=self.color, label=of(self.label) + ' noise',
+                    **kwargs)
+        return quantized
 
 class CDFormatSampler(PCMSampler):
     def __init__(self, label):
