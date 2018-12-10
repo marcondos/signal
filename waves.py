@@ -115,24 +115,6 @@ class PCMSampler(ADC):
     def discrete_time(self, length):
         return np.arange(0, length, self.sampling_interval)
 
-    def sample(self, signal, time_length, ax, show_noise=False, dither=False,
-            **kwargs):
-        # signal is a AnalogWave object
-        quantized = self.quantize(signal, time_length, dither=dither)
-        #quantized is converted, sampled_time, sampled_signal, noise
-        t = quantized[1].repeat(2)[1:]
-        y = quantized[2].repeat(2)[:-1]
-        kwargs.pop('color', None)
-        ax.plot(t*1000, y, **kwargs, color=self.color, label=self.label) #t (ms)
-        for kw in ['lw', 'linewidth', 'ls', 'linestyle']:
-            kwargs.pop(kw, None)
-        signal_domain = signal.time_array(time_length)
-        if show_noise:
-            ax.plot(signal_domain*1000, quantized[-1], lw=0.5, ls='-',
-                    color=self.color, label=of(self.label) + ' noise',
-                    **kwargs)
-        return quantized
-
 class CDFormatSampler(PCMSampler):
     def __init__(self, label):
         super().__init__(label, 44100, 16)
