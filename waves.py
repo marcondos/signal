@@ -127,6 +127,20 @@ class HFPALinearPCM(PCMSampler):
     def __init__(self, label):
         super().__init__(label, 192000, 24)
 
+class DAC(object):
+
+class DeltaSigma(DAC):
+    pass
+
+class OneBitDeltaSigma(DeltaSigma):
+    pass
+
+class MultiBitDeltaSigma(DeltaSigma):
+    pass
+
+class R2R(DAC):
+    pass
+
 def of(name):
     return name + ("'" if name.endswith('s') else "'s")
 
