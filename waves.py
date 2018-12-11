@@ -1,9 +1,6 @@
 import numpy as np
-import itertools
 from scipy import interpolate
 from math import floor
-
-COLOR = itertools.cycle(['C%i' % i for i in range(10)])
 
 class Wave(object):
     def __init__(self, label):
@@ -26,10 +23,11 @@ class AnalogWave(Wave):
     def time_array(self, length):
         return np.arange(0, length, self.period/self.infinity)
 
-    def plot(self, length, ax, **kwargs):
+    def view(self, ax, length, **kwargs):
         continuous_time = self.time_array(length)
+        label = kwargs.pop('label', self.label)
         ax.plot(continuous_time*1000, self.function(continuous_time),
-                label=self.label, **kwargs) # in plot, time in miliseconds
+                label=label, **kwargs) # in plot, time in miliseconds
         return continuous_time
 
 class AnalogSineWave(AnalogWave):
@@ -37,7 +35,11 @@ class AnalogSineWave(AnalogWave):
         return np.sin(self.angular_frequency * t + self.phase)
 
 class DigitalWave(Wave):
-    pass
+    
+    def view(self, ax, **kwargs):
+        t = self.t.repeat(2)[1:]
+        y = self.y.repeat(2)[:-1]
+        ax.plot(t*1000, y, **kwargs) # t (ms)
 
 class PCMDigitalWave(DigitalWave):
 
@@ -49,8 +51,7 @@ class PCMDigitalWave(DigitalWave):
         super().__init__(label)
 
 class ADC(object):
-    def __init__(self, label, freq, res, amp_max=1.2, color=None):
-        self.color = next(COLOR) if color is None else color
+    def __init__(self, label, freq, res, amp_max=1.2):
         # frequency in Hz, resolution in bits
         self.sampling_frequency = freq
         self.sampling_interval = 1/freq # in seconds
@@ -98,8 +99,10 @@ class ADC(object):
         quantization_noise = digital(time) - analog
         digital = self.digitize(input_signal.label + ' converted', unsigned,
                 self.sampling_frequency, self.amplitude_resolution)
+        digital.t = time_domain
+        digital.y = signed
         # *pars
-        return digital, time_domain, signed, quantization_noise
+        return digital, quantization_noise
 
 class DSDSampler(ADC):
     pass
@@ -128,6 +131,7 @@ class HFPALinearPCM(PCMSampler):
         super().__init__(label, 192000, 24)
 
 class DAC(object):
+    pass
 
 class DeltaSigma(DAC):
     pass
