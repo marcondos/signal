@@ -61,7 +61,8 @@ class ADC(object):
         self.amp_max = amp_max
         self.amp_min = -amp_max
         amplitude = self.amp_max - self.amp_min
-        self.quantization_step = amplitude/int_amplitude
+        # least significant bit (LSB):
+        self.LSB = amplitude/int_amplitude
         self.label = label
 
     def clip(self, signal):
@@ -76,35 +77,51 @@ class ADC(object):
         # noise for full elimination of distortion than Gaussian noise;
         # Triangular distributed noise also minimizes noise modulation
         # retangular:
-        distribution, pars = np.random.uniform, (0, self.quantization_step)
+        distribution, pars = np.random.uniform, (-self.LSB/2, self.LSB/2)
         # triangular:
-        #distribution, pars = np.random.triangular, (0, self.quantization_step/2, self.quantization_step)
+        #distribution, pars = np.random.triangular, (-self.LSB/2, 0, self.LSB/2)
+        # gaussian:
+        #distribution, pars = np.random.norm, (0, 2/3 * self.LSB)
         dithering = distribution(*pars, size=time_domain.size) \
                 if dither else 0
 
         # classification stage:
-        clipped_signal = self.clip(input_signal.function(time_domain) \
-                + dithering) - self.amp_min
-        unsigned = np.array([floor(s/self.quantization_step) \
-                for s in clipped_signal], dtype=int)
-        #print(of(self.label), 'stream (%i levels):' % self.levels,
-        #        shortlist(unsigned))
+        clipped_signal = self.clip(input_signal.function(time_domain) + dithering)
+        unsigned = self.classify(clipped_signal)
+        digital = self.digital_object(input_signal.label + ' converted',
+                unsigned, self.sampling_frequency, self.amplitude_resolution)
 
         # reconstruction stage:
-        signed = unsigned * self.quantization_step + self.amp_min
+        signed = self.reconstruct(unsigned)
+        # subtractive dither:
+        ### signed -= dithering 
+        ### this gives wrong levels
         time = input_signal.time_array(time_length)
         analog = input_signal.function(time)
-        digital = interpolate.interp1d(time_domain, signed, kind=0,
+        digital_interp = interpolate.interp1d(time_domain, signed, kind=0,
                 fill_value='extrapolate')
-        quantization_noise = digital(time) - analog
-        digital = self.digitize(input_signal.label + ' converted', unsigned,
-                self.sampling_frequency, self.amplitude_resolution)
+        quantization_noise = digital_interp(time) - analog
         digital.t = time_domain
         digital.y = signed
         # *pars
         return digital, quantization_noise
 
-class DSDSampler(ADC):
+class MidTreadQuantizer(ADC):
+    def classify(self, clipped_signal):
+        return np.array([floor(s/self.LSB + 0.5) for s \
+                in clipped_signal-self.amp_min], dtype=int)
+
+    def reconstruct(self, unsigned):
+        return unsigned * self.LSB + self.amp_min
+
+class MidRiserQuantizer(ADC):
+    def classify(self, clipped_signal):
+        return np.array([floor(s/self.LSB) for s in clipped_signal-self.amp_min], dtype=int)
+
+    def reconstruct(self, unsigned):
+        return unsigned * self.LSB + self.LSB/2 + self.amp_min
+
+class DSDSampler(MidRiserQuantizer):
     pass
     # noise shaping
 
@@ -112,8 +129,9 @@ class SACDFormatSampler(DSDSampler):
     def __init__(self, label):
         super().__init__(label, 64 * 44100, 1)
 
-class PCMSampler(ADC):
-    digitize = PCMDigitalWave
+#class PCMSampler(MidRiserQuantizer):
+class PCMSampler(MidTreadQuantizer):
+    digital_object = PCMDigitalWave
 
     def discrete_time(self, length):
         return np.arange(0, length, self.sampling_interval)
