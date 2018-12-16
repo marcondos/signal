@@ -24,18 +24,18 @@ class AnalogWave(Wave):
         return np.arange(0, length, self.period/self.infinity)
 
     def view(self, ax, length, **kwargs):
-        continuous_time = self.time_array(length)
+        t = self.time_array(length)
+        y = self.function(t)
         label = kwargs.pop('label', self.label)
-        ax.plot(continuous_time*1000, self.function(continuous_time),
-                label=label, **kwargs) # in plot, time in miliseconds
-        return continuous_time
+        ax.plot(t*1000, y, label=label, **kwargs) # in plot, time in miliseconds
+        return t, y
 
 class AnalogSineWave(AnalogWave):
     def _function(self, t):
         return np.sin(self.angular_frequency * t + self.phase)
 
 class DigitalWave(Wave):
-    
+
     def view(self, ax, **kwargs):
         t = self.t.repeat(2)[1:]
         y = self.y.repeat(2)[:-1]
@@ -81,7 +81,7 @@ class ADC(object):
         # triangular:
         #distribution, pars = np.random.triangular, (-self.LSB/2, 0, self.LSB/2)
         # gaussian:
-        #distribution, pars = np.random.norm, (0, 2/3 * self.LSB)
+        #distribution, pars = np.random.normal, (0, 2/3 * self.LSB)
         dithering = distribution(*pars, size=time_domain.size) \
                 if dither else 0
 
@@ -116,7 +116,8 @@ class MidTreadQuantizer(ADC):
 
 class MidRiserQuantizer(ADC):
     def classify(self, clipped_signal):
-        return np.array([floor(s/self.LSB) for s in clipped_signal-self.amp_min], dtype=int)
+        return np.array([floor(s/self.LSB) for s in clipped_signal-self.amp_min],
+                dtype=int)
 
     def reconstruct(self, unsigned):
         return unsigned * self.LSB + self.LSB/2 + self.amp_min
